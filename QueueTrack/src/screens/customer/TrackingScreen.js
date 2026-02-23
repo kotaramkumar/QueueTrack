@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -31,6 +31,17 @@ export default function TrackingScreen({ route }) {
   const primaryColor = isRestaurant ? '#E85D04' : '#0077B6';
   const settings = state.settings[mode];
   const waitingQueue = getWaitingQueue(mode);
+
+  // Auto-search when opened from deep link (queuetrack://track?mode=...&no=R001)
+  useEffect(() => {
+    const deepLinkNo = route.params?.no;
+    if (deepLinkNo) {
+      setQuery(deepLinkNo);
+      const found = findByQueueNumber(mode, deepLinkNo) || findByPhone(mode, deepLinkNo);
+      if (found) { setResultId(found.id); setSearched(true); setNotFound(false); }
+      else { setSearched(true); setNotFound(true); }
+    }
+  }, [route.params?.no]);
 
   // Always read live from context so status/position update automatically
   const result = resultId

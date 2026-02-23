@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ref, set, onValue, off } from 'firebase/database';
+import { db } from '../firebase';
 
 const STORAGE_KEY = '@QueueTrack:state';
 
@@ -142,24 +144,133 @@ function queueReducer(state, action) {
   }
 }
 
+// Convert queue array to Firebase-friendly object keyed by queueNumber
+function queuesToFirebase(queues) {
+  const result = {};
+  for (const mode of ['restaurant', 'hospital']) {
+    result[mode] = {};
+    for (const customer of queues[mode] || []) {
+      result[mode][customer.queueNumber] = customer;
+    }
+  }
+  return result;
+}
+
+// Convert doctors array to Firebase-friendly object keyed by id
+function settingsToFirebase(settings) {
+  const result = { restaurant: { ...settings.restaurant }, hospital: {} };
+  const hosp = settings.hospital || {};
+  result.hospital = {
+    avgWaitMinutes: hosp.avgWaitMinutes,
+    businessName: hosp.businessName,
+    doctors: {},
+  };
+  for (const doc of hosp.doctors || []) {
+    result.hospital.doctors[doc.id] = doc;
+  }
+  return result;
+}
+
+// Restore arrays from Firebase snapshot
+function queuesFromFirebase(fbQueues) {
+  const result = { restaurant: [], hospital: [] };
+  for (const mode of ['restaurant', 'hospital']) {
+    const entries = fbQueues?.[mode] || {};
+    result[mode] = Object.values(entries).sort(
+      (a, b) => new Date(a.addedAt) - new Date(b.addedAt)
+    );
+  }
+  return result;
+}
+
+function settingsFromFirebase(fbSettings, fallback) {
+  if (!fbSettings) return fallback;
+  const hosp = fbSettings.hospital || {};
+  return {
+    restaurant: fbSettings.restaurant || fallback.restaurant,
+    hospital: {
+      avgWaitMinutes: hosp.avgWaitMinutes ?? fallback.hospital.avgWaitMinutes,
+      businessName: hosp.businessName ?? fallback.hospital.businessName,
+      doctors: Object.values(hosp.doctors || {}).length > 0
+        ? Object.values(hosp.doctors)
+        : fallback.hospital.doctors,
+    },
+  };
+}
+
 const QueueContext = createContext(null);
 
 export function QueueProvider({ children }) {
   const [state, dispatch] = useReducer(queueReducer, initialState);
+  // Track whether we have loaded initial state (to avoid writing before reading)
+  const initialLoadDone = useRef(false);
+  // Prevent feedback loop when Firebase update triggers a local dispatch
+  const isFirebaseUpdate = useRef(false);
 
+  // On mount: subscribe to Firebase for real-time updates
   useEffect(() => {
-    (async () => {
-      try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
+    const dbRef = ref(db, '/');
+    const unsubscribe = onValue(dbRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) {
+        // Firebase empty — fall back to AsyncStorage for first-run migration
+        AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
+          if (saved) {
+            dispatch({ type: 'LOAD_STATE', payload: JSON.parse(saved) });
+          }
+          initialLoadDone.current = true;
+        }).catch(() => {
+          initialLoadDone.current = true;
+        });
+        return;
+      }
+
+      isFirebaseUpdate.current = true;
+      const loaded = {
+        mode: data.mode ?? null,
+        queues: queuesFromFirebase(data.queues),
+        settings: settingsFromFirebase(data.settings, initialState.settings),
+        counters: data.counters || initialState.counters,
+      };
+      dispatch({ type: 'LOAD_STATE', payload: loaded });
+      initialLoadDone.current = true;
+    }, (error) => {
+      // Firebase unavailable — fall back to AsyncStorage
+      console.warn('Firebase unavailable, using local storage:', error.message);
+      AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
         if (saved) {
           dispatch({ type: 'LOAD_STATE', payload: JSON.parse(saved) });
         }
-      } catch (_) {}
-    })();
+        initialLoadDone.current = true;
+      }).catch(() => {
+        initialLoadDone.current = true;
+      });
+    });
+
+    return () => off(dbRef);
   }, []);
 
+  // On every state change: sync to Firebase + AsyncStorage
   useEffect(() => {
+    if (!initialLoadDone.current) return;
+    if (isFirebaseUpdate.current) {
+      isFirebaseUpdate.current = false;
+      return;
+    }
+
+    // Write to AsyncStorage (local backup)
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
+
+    // Write to Firebase
+    const fbData = {
+      mode: state.mode,
+      queues: queuesToFirebase(state.queues),
+      settings: settingsToFirebase(state.settings),
+      counters: state.counters,
+    };
+    set(ref(db, '/'), fbData).catch((err) => {
+      console.warn('Firebase write failed:', err.message);
+    });
   }, [state]);
 
   // Helpers

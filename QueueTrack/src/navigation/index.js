@@ -93,9 +93,24 @@ function BackButton({ onPress, tintColor }) {
   );
 }
 
+const linking = {
+  prefixes: ['queuetrack://'],
+  config: {
+    screens: {
+      CustomerTracking: {
+        path: 'track',
+        parse: {
+          mode: (mode) => mode,
+          no: (no) => no,
+        },
+      },
+    },
+  },
+};
+
 export default function AppNavigator() {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         initialRouteName="Welcome"
         screenOptions={({ navigation }) => ({

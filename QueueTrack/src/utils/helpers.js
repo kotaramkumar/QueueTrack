@@ -12,6 +12,10 @@ export function formatWait(minutes) {
   return m > 0 ? `~${h}h ${m}m` : `~${h}h`;
 }
 
+export function buildTrackingLink(mode, queueNumber) {
+  return `https://kotaramkumar.github.io/QueueTrack/?mode=${mode}&no=${queueNumber}`;
+}
+
 export function buildSmsBody(customer, mode, position, estimatedWait, settings) {
   const prefix = mode === 'restaurant' ? '🍽' : '🏥';
   const businessName = settings?.businessName || 'Queue Track';
@@ -23,6 +27,7 @@ export function buildSmsBody(customer, mode, position, estimatedWait, settings) 
     mode === 'hospital' && customer.doctor
       ? `\nAssigned Doctor: ${customer.doctor}`
       : '';
+  const trackingLink = buildTrackingLink(mode, customer.queueNumber);
 
   return `${prefix} ${businessName} - Queue Confirmation
 
@@ -32,7 +37,10 @@ Your Queue Number: ${customer.queueNumber}
 Position in Queue: ${position}
 Estimated Wait: ${formatWait(estimatedWait)}${seatInfo}${doctorInfo}
 
-Open the QueueTrack app and enter your Queue No. to track live status.
+📲 Track your live queue status:
+${trackingLink}
+
+Tap the link to see your real-time position — no app needed.
 
 Thank you for your patience! 🙏`;
 }
