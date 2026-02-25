@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<!-- QueueTrack v1.0 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Queue Track – Live Status</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #2196F3;
+      --success: #4CAF50;
+      --warning: #FF9800;
+      --muted:   #9E9E9E;
+      --bg:      #F5F5F5;
+      --card:    #FFFFFF;
+      --text:    #212121;
+      --subtext: #757575;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    header .logo {
+      font-size: 2rem;
+      margin-bottom: 4px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    header p {
+      font-size: 0.875rem;
+      color: var(--subtext);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+
+    /* Queue number hero */
+    .queue-hero {
+      text-align: center;
+      padding: 12px 0 20px;
+    }
+
+    .queue-hero .label {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--subtext);
+      margin-bottom: 8px;
+    }
+
+    .queue-hero .number {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+    }
+
+    .queue-hero .name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    /* Status badge */
+    .badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-top: 12px;
+    }
+
+    .badge-waiting { background: #FFF3E0; color: var(--warning); }
+    .badge-called  { background: #E8F5E9; color: var(--success); }
+    .badge-served  { background: #F5F5F5; color: var(--muted); }
+
+    /* Stats grid */
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .stat-box {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+    }
+
+    .stat-box .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-box .stat-label {
+      font-size: 0.75rem;
+      color: var(--subtext);
+      margin-top: 4px;
+    }
+
+    /* Info rows */
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #F0F0F0;
+    }
+
+    .info-row:last-child { border-bottom: none; }
+
+    .info-row .key {
+      font-size: 0.875rem;
+      color: var(--subtext);
+    }
+
+    .info-row .val {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    /* Called banner */
+    .called-banner {
+      background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+      border: 2px solid var(--success);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .called-banner .banner-icon { font-size: 2rem; }
+    .called-banner .banner-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #2E7D32;
+      margin-top: 6px;
+    }
+    .called-banner .banner-sub {
+      font-size: 0.8rem;
+      color: #388E3C;
+      margin-top: 4px;
+    }
+
+    /* Update indicator */
+    .update-bar {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: var(--subtext);
+      margin-top: 4px;
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Error / loading states */
+    #loading, #error {
+      text-align: center;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    #loading .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid #E3F2FD;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loading p, #error p {
+      color: var(--subtext);
+      font-size: 0.9rem;
+    }
+
+    #error .error-icon { font-size: 3rem; margin-bottom: 12px; }
+    #error h2 { font-size: 1.25rem; margin-bottom: 8px; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">🎫</div>
+    <h1>Queue Track</h1>
+    <p>Live queue status — no app needed</p>
+  </header>
+
+  <!-- Loading state -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Loading your queue status…</p>
+  </div>
+
+  <!-- Error state -->
+  <div id="error" class="hidden">
+    <div class="error-icon">⚠️</div>
+    <h2 id="error-title">Queue not found</h2>
+    <p id="error-msg">Check your link and try again.</p>
+  </div>
+
+  <!-- Queue info (shown once data loads) -->
+  <div id="content" class="hidden">
+
+    <!-- Hero card: queue number + name + status -->
+    <div class="card">
+      <div class="queue-hero">
+        <div class="label">Your Queue Number</div>
+        <div class="number" id="q-number">—</div>
+        <div class="name" id="q-name">—</div>
+        <div id="q-badge" class="badge badge-waiting">Waiting</div>
+      </div>
+
+      <!-- Called banner (hidden unless status = called) -->
+      <div id="called-banner" class="called-banner hidden">
+        <div class="banner-icon">🔔</div>
+        <div class="banner-title">You've been called!</div>
+        <div class="banner-sub">Please proceed to the counter now.</div>
+      </div>
+    </div>
+
+    <!-- Stats: position + wait -->
+    <div class="card">
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-value" id="q-position">—</div>
+          <div class="stat-label">Position in Queue</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="q-wait">—</div>
+          <div class="stat-label">Est. Wait</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details card -->
+    <div class="card">
+      <div class="info-row">
+        <span class="key">Business</span>
+        <span class="val" id="q-business">—</span>
+      </div>
+      <div class="info-row" id="row-doctor" style="display:none">
+        <span class="key">Doctor</span>
+        <span class="val" id="q-doctor">—</span>
+      </div>
+      <div class="info-row" id="row-seats" style="display:none">
+        <span class="key">Available Seats</span>
+        <span class="val" id="q-seats">—</span>
+      </div>
+      <div class="info-row">
+        <span class="key">Added at</span>
+        <span class="val" id="q-added">—</span>
+      </div>
+    </div>
+
+    <!-- Live indicator -->
+    <div class="update-bar">
+      <div class="dot"></div>
+      <span>Auto-refreshes every 5 seconds &middot; Last updated <span id="last-updated">just now</span></span>
+    </div>
+  </div>
+
+  <script>
+    // ─── CONFIG ─────────────────────────────────────────────────────────────
+    const FIREBASE_DB_URL = 'https://queuetrack-36c42-default-rtdb.firebaseio.com';
+    const POLL_INTERVAL_MS = 5000;
+    // ────────────────────────────────────────────────────────────────────────
+
+    // Parse URL params
+    const params = new URLSearchParams(window.location.search);
+    const mode   = (params.get('mode') || '').toLowerCase();
+    const qNo    = (params.get('no')   || '').toUpperCase();
+
+    function showError(title, msg) {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('content').classList.add('hidden');
+      document.getElementById('error').classList.remove('hidden');
+      document.getElementById('error-title').textContent = title;
+      document.getElementById('error-msg').textContent   = msg;
+    }
+
+    function showContent() {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+    }
+
+    function formatTime(iso) {
+      const d = new Date(iso);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatWait(mins) {
+      if (mins === null || mins === undefined) return 'N/A';
+      if (mins === 0) return 'Your turn!';
+      if (mins < 60) return `~${mins}m`;
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return m > 0 ? `~${h}h ${m}m` : `~${h}h`;
+    }
+
+    function calcPosition(queuesForMode, customer) {
+      const waiting = Object.values(queuesForMode || {})
+        .filter(c => c.status === 'waiting')
+        .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
+      const idx = waiting.findIndex(c => c.queueNumber === customer.queueNumber);
+      return idx === -1 ? null : idx + 1;
+    }
+
+    function render(customer, queuesForMode, settingsForMode) {
+      showContent();
+
+      const status = customer.status;
+
+      // Queue number + name
+      document.getElementById('q-number').textContent = customer.queueNumber;
+      document.getElementById('q-name').textContent   = customer.name;
+
+      // Badge
+      const badge = document.getElementById('q-badge');
+      badge.className = 'badge';
+      if (status === 'waiting') {
+        badge.classList.add('badge-waiting');
+        badge.textContent = 'Waiting';
+      } else if (status === 'called') {
+        badge.classList.add('badge-called');
+        badge.textContent = 'Called';
+      } else {
+        badge.classList.add('badge-served');
+        badge.textContent = 'Served';
+      }
+
+      // Called banner
+      const calledBanner = document.getElementById('called-banner');
+      if (status === 'called') {
+        calledBanner.classList.remove('hidden');
+      } else {
+        calledBanner.classList.add('hidden');
+      }
+
+      // Position + wait
+      const pos = (status === 'waiting') ? calcPosition(queuesForMode, customer) : null;
+      const avg = settingsForMode?.avgWaitMinutes || 15;
+      const waitMins = (pos !== null && pos > 0) ? (pos - 1) * avg : null;
+
+      document.getElementById('q-position').textContent =
+        status === 'served' ? '✓ Done'
+        : status === 'called' ? 'Now!'
+        : (pos !== null ? `#${pos}` : '—');
+
+      document.getElementById('q-wait').textContent =
+        status === 'served' ? 'Served'
+        : status === 'called' ? 'Go now!'
+        : formatWait(waitMins);
+
+      // Business name
+      document.getElementById('q-business').textContent =
+        settingsForMode?.businessName || '—';
+
+      // Doctor (hospital)
+      const rowDoctor = document.getElementById('row-doctor');
+      if (customer.doctor) {
+        rowDoctor.style.display = 'flex';
+        document.getElementById('q-doctor').textContent = customer.doctor;
+      } else {
+        rowDoctor.style.display = 'none';
+      }
+
+      // Available seats (restaurant)
+      const rowSeats = document.getElementById('row-seats');
+      if (mode === 'restaurant' && settingsForMode?.availableSeats !== undefined) {
+        rowSeats.style.display = 'flex';
+        document.getElementById('q-seats').textContent =
+          `${settingsForMode.availableSeats} / ${settingsForMode.totalCapacity || '?'}`;
+      } else {
+        rowSeats.style.display = 'none';
+      }
+
+      // Added at
+      document.getElementById('q-added').textContent =
+        customer.addedAt ? formatTime(customer.addedAt) : '—';
+
+      // Last updated
+      document.getElementById('last-updated').textContent =
+        new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    async function fetchAndRender() {
+      if (!mode || !qNo) {
+        showError('Invalid link', 'This link is missing the queue details. Please check the SMS you received.');
+        return;
+      }
+
+      if (!['restaurant', 'hospital'].includes(mode)) {
+        showError('Unknown mode', `Mode "${mode}" is not recognised. Expected "restaurant" or "hospital".`);
+        return;
+      }
+
+      const encodedKey = qNo.replace('#', '%23');
+
+      try {
+        // Fetch the specific queue entry
+        const entryRes = await fetch(
+          `${FIREBASE_DB_URL}/queues/${mode}/${encodedKey}.json`
+        );
+        if (!entryRes.ok) throw new Error(`HTTP ${entryRes.status}`);
+        const customer = await entryRes.json();
+
+        if (!customer || customer === null) {
+          showError('Queue not found', `No entry found for ${qNo} in ${mode} queue. It may have been cleared.`);
+          return;
+        }
+
+        // Fetch settings + full mode queue for position calculation
+        const [settingsRes, queuesRes] = await Promise.all([
+          fetch(`${FIREBASE_DB_URL}/settings/${mode}.json`),
+          fetch(`${FIREBASE_DB_URL}/queues/${mode}.json`),
+        ]);
+
+        const settings    = settingsRes.ok    ? await settingsRes.json()    : null;
+        const queuesForMode = queuesRes.ok    ? await queuesRes.json()      : {};
+
+        render(customer, queuesForMode, settings);
+      } catch (err) {
+        // Only show error on first load; keep stale data on subsequent polls
+        if (document.getElementById('content').classList.contains('hidden')) {
+          showError('Could not load status', 'Check your internet connection and try again.');
+        }
+      }
+    }
+
+    // Initial fetch
+    fetchAndRender();
+
+    // Poll every 5 seconds
+    setInterval(fetchAndRender, POLL_INTERVAL_MS);
+  </script>
+</body>
+</html>
