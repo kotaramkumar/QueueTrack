@@ -44,8 +44,20 @@ jobs:
 
       - name: Deploy to Netlify
         run: |
-          curl -s -X POST "https://api.netlify.com/api/v1/sites/${{ secrets.NETLIFY_SITE_ID }}/deploys" \
+          FILE="QueueTrack/docs/index.html"
+          HASH=$(sha1sum "$FILE" | awk '{print $1}')
+
+          # Create deploy with file digest
+          DEPLOY=$(curl -s -X POST "https://api.netlify.com/api/v1/sites/${{ secrets.NETLIFY_SITE_ID }}/deploys" \
             -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
-            -H "Content-Type: application/zip" \
-            --data-binary @<(cd QueueTrack/docs && zip -r - .) \
-            | grep -o '"state":"[^"]*"'
+            -H "Content-Type: application/json" \
+            -d "{\"files\": {\"/index.html\": \"$HASH\"}}")
+          DEPLOY_ID=$(echo "$DEPLOY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+          # Upload file
+          curl -s -X PUT "https://api.netlify.com/api/v1/deploys/$DEPLOY_ID/files/index.html" \
+            -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$FILE"
+
+          echo "Deployed to https://queuetrack.netlify.app"
