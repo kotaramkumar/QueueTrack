@@ -13,7 +13,7 @@ export function formatWait(minutes) {
 }
 
 export function buildTrackingLink(mode, queueNumber) {
-  return `https://kotaramkumar.github.io/QueueTrack/?mode=${mode}&no=${queueNumber}`;
+  return `https://queuetrack.netlify.app/?mode=${mode}&no=${queueNumber}`;
 }
 
 export function buildSmsBody(customer, mode, position, estimatedWait, settings) {
