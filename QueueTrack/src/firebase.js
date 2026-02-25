@@ -1,16 +1,14 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
 
-// TODO: Replace with your Firebase project config
-// Get this from: Firebase Console → Project Settings → Your apps → SDK setup
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyDx2IY-qP0TrRMyKpDo_Hkm714Xhi7xGEE",
+  authDomain: "queuetrack-36c42.firebaseapp.com",
+  databaseURL: "https://queuetrack-36c42-default-rtdb.firebaseio.com",
+  projectId: "queuetrack-36c42",
+  storageBucket: "queuetrack-36c42.firebasestorage.app",
+  messagingSenderId: "134903723433",
+  appId: "1:134903723433:web:617f97d3db539b5c9e00b8",
 };
 
 const app = initializeApp(firebaseConfig);
