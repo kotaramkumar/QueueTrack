@@ -8,9 +8,11 @@ import {
   SafeAreaView,
   Alert,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { useQueue } from '../../context/QueueContext';
-import { formatWait } from '../../utils/helpers';
+import { formatWait, buildCallSmsBody } from '../../utils/helpers';
+import * as SMS from 'expo-sms';
 
 function StatCard({ label, value, color, emoji, sub }) {
   return (
@@ -36,12 +38,35 @@ export default function DashboardScreen({ route, navigation }) {
   const primaryColor = isRestaurant ? '#E85D04' : '#0077B6';
   const businessName = settings?.businessName || (isRestaurant ? 'Restaurant' : 'Hospital');
 
-  const callNext = () => {
+  const callOnPhone = (customer) => {
+    const phone = customer.phone.replace(/\s/g, '');
+    Linking.openURL(`tel:${phone}`).catch(() =>
+      Alert.alert('Error', 'Unable to open the phone dialer.')
+    );
+  };
+
+  const callNext = async () => {
     if (waitingQueue.length === 0) {
       Alert.alert('Queue Empty', 'No customers are waiting right now.');
       return;
     }
+    const nextCustomer = waitingQueue[0];
     dispatch({ type: 'CALL_NEXT', payload: { mode } });
+    try {
+      const available = await SMS.isAvailableAsync();
+      if (available) {
+        const smsBody = buildCallSmsBody(nextCustomer, mode, settings);
+        await SMS.sendSMSAsync([nextCustomer.phone], smsBody);
+      }
+    } catch (_) {}
+    Alert.alert(
+      `📣 Calling ${nextCustomer.name}`,
+      `Queue No: ${nextCustomer.queueNumber}\n📱 ${nextCustomer.phone}`,
+      [
+        { text: '📞 Call on Phone', onPress: () => callOnPhone(nextCustomer) },
+        { text: 'Done', style: 'cancel' },
+      ]
+    );
   };
 
   const markServed = () => {

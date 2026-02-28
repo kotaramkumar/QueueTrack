@@ -15,7 +15,7 @@ const initialState = {
     restaurant: {
       availableSeats: 4,
       totalCapacity: 20,
-      avgWaitMinutes: 15,
+      avgWaitMinutes: 10,
       businessName: 'Our Restaurant',
     },
     hospital: {
@@ -24,7 +24,7 @@ const initialState = {
         { id: 'd2', name: 'Dr. Johnson', specialty: 'Cardiology', available: true },
         { id: 'd3', name: 'Dr. Williams', specialty: 'Pediatrics', available: false },
       ],
-      avgWaitMinutes: 20,
+      avgWaitMinutes: 10,
       businessName: 'City Hospital',
     },
   },
@@ -99,6 +99,18 @@ function queueReducer(state, action) {
       return { ...state, queues: { ...state.queues, [mode]: updated } };
     }
 
+    case 'REORDER_QUEUE': {
+      const { mode, id, newPosition } = action.payload;
+      const allItems = state.queues[mode] || [];
+      const waiting = allItems.filter((c) => c.status === 'waiting');
+      const others = allItems.filter((c) => c.status !== 'waiting');
+      const currentIdx = waiting.findIndex((c) => c.id === id);
+      if (currentIdx === -1) return state;
+      const [customer] = waiting.splice(currentIdx, 1);
+      waiting.splice(newPosition - 1, 0, customer);
+      return { ...state, queues: { ...state.queues, [mode]: [...waiting, ...others] } };
+    }
+
     case 'CLEAR_SERVED': {
       const { mode } = action.payload;
       const updated = state.queues[mode].filter((c) => c.status !== 'served');
@@ -128,6 +140,19 @@ function queueReducer(state, action) {
           hospital: { ...state.settings.hospital, doctors },
         },
       };
+    }
+
+    case 'ADD_DOCTOR': {
+      const { name, specialty } = action.payload;
+      const newDoctor = { id: `d${Date.now()}`, name: name.trim(), specialty: specialty.trim() || 'General', available: true };
+      const doctors = [...(state.settings.hospital?.doctors || []), newDoctor];
+      return { ...state, settings: { ...state.settings, hospital: { ...state.settings.hospital, doctors } } };
+    }
+
+    case 'REMOVE_DOCTOR': {
+      const { id } = action.payload;
+      const doctors = (state.settings.hospital?.doctors || []).filter((d) => d.id !== id);
+      return { ...state, settings: { ...state.settings, hospital: { ...state.settings.hospital, doctors } } };
     }
 
     case 'RESET_QUEUE': {
@@ -289,8 +314,12 @@ export function QueueProvider({ children }) {
   const getEstimatedWait = (mode, id) => {
     const pos = getQueuePosition(mode, id);
     if (pos === null) return null;
-    const avg = state.settings[mode]?.avgWaitMinutes || 15;
-    return (pos - 1) * avg;
+    const avg = state.settings[mode]?.avgWaitMinutes || 10;
+    const customer = state.queues[mode]?.find((c) => c.id === id);
+    const totalWait = (pos - 1) * avg;
+    if (!customer?.addedAt) return totalWait;
+    const elapsedMinutes = (Date.now() - new Date(customer.addedAt).getTime()) / 60000;
+    return Math.max(0, Math.round(totalWait - elapsedMinutes));
   };
 
   const findByQueueNumber = (mode, queueNumber) =>

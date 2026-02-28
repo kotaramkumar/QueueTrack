@@ -45,6 +45,24 @@ Tap the link to see your real-time position — no app needed.
 Thank you for your patience! 🙏`;
 }
 
+export function buildCallSmsBody(customer, mode, settings) {
+  const prefix = mode === 'restaurant' ? '🍽' : '🏥';
+  const businessName = settings?.businessName || 'Queue Smart';
+  const doctorInfo =
+    mode === 'hospital' && customer.doctor
+      ? `\nPlease proceed to ${customer.doctor}'s room.`
+      : '';
+  return `${prefix} ${businessName} - It's Your Turn!
+
+Hello ${customer.name}!
+
+📣 Your queue number ${customer.queueNumber} is being called NOW.
+
+Please come to the reception immediately.${doctorInfo}
+
+Thank you! 🙏`;
+}
+
 export function statusColor(status) {
   switch (status) {
     case 'waiting':

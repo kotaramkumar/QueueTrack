@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
+  AppState,
 } from 'react-native';
 import { useQueue } from '../../context/QueueContext';
 import { formatWait, formatTime, statusColor, statusLabel } from '../../utils/helpers';
@@ -26,6 +27,25 @@ export default function TrackingScreen({ route }) {
   const [resultId, setResultId] = useState(null); // store id only, not snapshot
   const [notFound, setNotFound] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [, setTick] = useState(0);
+  const appState = useRef(AppState.currentState);
+
+  // Re-render every 10 seconds so estimated wait time auto-reduces
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Force refresh when app comes back to foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (appState.current.match(/inactive|background/) && nextState === 'active') {
+        setTick((t) => t + 1);
+      }
+      appState.current = nextState;
+    });
+    return () => sub.remove();
+  }, []);
 
   const isRestaurant = mode === 'restaurant';
   const primaryColor = isRestaurant ? '#E85D04' : '#0077B6';

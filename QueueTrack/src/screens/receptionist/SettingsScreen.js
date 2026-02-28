@@ -24,6 +24,8 @@ export default function SettingsScreen({ route }) {
   const [businessName, setBusinessName] = useState(settings?.businessName || '');
   const [avgWait, setAvgWait] = useState(String(settings?.avgWaitMinutes || 15));
   const [availableSeats, setAvailableSeats] = useState(String(settings?.availableSeats || 4));
+  const [newDoctorName, setNewDoctorName] = useState('');
+  const [newDoctorSpecialty, setNewDoctorSpecialty] = useState('');
 
   const saveSettings = () => {
     const updates = {
@@ -37,6 +39,21 @@ export default function SettingsScreen({ route }) {
 
   const toggleDoctor = (doctor) => {
     dispatch({ type: 'UPDATE_DOCTOR', payload: { id: doctor.id, available: !doctor.available } });
+  };
+
+  const addDoctor = () => {
+    const name = newDoctorName.trim();
+    if (!name) { Alert.alert('Required', 'Please enter a doctor name.'); return; }
+    dispatch({ type: 'ADD_DOCTOR', payload: { name, specialty: newDoctorSpecialty.trim() || 'General' } });
+    setNewDoctorName('');
+    setNewDoctorSpecialty('');
+  };
+
+  const removeDoctor = (doctor) => {
+    Alert.alert('Remove Doctor', `Remove ${doctor.name} from the list?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'REMOVE_DOCTOR', payload: { id: doctor.id } }) },
+    ]);
   };
 
   const adjustSeats = (delta) => {
@@ -108,7 +125,7 @@ export default function SettingsScreen({ route }) {
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Doctor Availability</Text>
-              <Text style={styles.sectionHint}>Toggle to update real-time availability</Text>
+              <Text style={styles.sectionHint}>Toggle availability · Swipe to remove</Text>
             </View>
             <View style={styles.card}>
               {settings?.doctors?.map((doctor, index) => (
@@ -135,8 +152,33 @@ export default function SettingsScreen({ route }) {
                       ios_backgroundColor="#E2E8F0"
                     />
                   </View>
+                  <TouchableOpacity style={styles.doctorDeleteBtn} onPress={() => removeDoctor(doctor)}>
+                    <Text style={styles.doctorDeleteText}>✕</Text>
+                  </TouchableOpacity>
                 </View>
               ))}
+
+              {/* Add Doctor Form */}
+              <View style={[styles.addDoctorForm, settings?.doctors?.length > 0 && styles.doctorBorder]}>
+                <Text style={styles.fieldLabel}>Add New Doctor</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newDoctorName}
+                  onChangeText={setNewDoctorName}
+                  placeholder="Doctor Name (e.g. Dr. Kumar)"
+                  placeholderTextColor="#94A3B8"
+                />
+                <TextInput
+                  style={[styles.input, { marginTop: 10 }]}
+                  value={newDoctorSpecialty}
+                  onChangeText={setNewDoctorSpecialty}
+                  placeholder="Specialty (e.g. Cardiology)"
+                  placeholderTextColor="#94A3B8"
+                />
+                <TouchableOpacity style={[styles.addDoctorBtn, { backgroundColor: primaryColor }]} onPress={addDoctor}>
+                  <Text style={styles.addDoctorBtnText}>+ Add Doctor</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </>
         )}
@@ -208,6 +250,11 @@ const styles = StyleSheet.create({
   doctorSpec: { fontSize: 12, color: '#64748B', marginTop: 2 },
   doctorToggleGroup: { alignItems: 'flex-end', gap: 3 },
   availLabel: { fontSize: 11, fontWeight: '600' },
+  doctorDeleteBtn: { marginLeft: 8, width: 28, height: 28, borderRadius: 8, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' },
+  doctorDeleteText: { color: '#EF4444', fontWeight: '700', fontSize: 13 },
+  addDoctorForm: { padding: 16 },
+  addDoctorBtn: { marginTop: 12, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  addDoctorBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
 
   aboutRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
   aboutKey: { fontSize: 14, color: '#64748B', fontWeight: '500' },

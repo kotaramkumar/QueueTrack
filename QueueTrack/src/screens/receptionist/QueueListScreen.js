@@ -8,9 +8,11 @@ import {
   SafeAreaView,
   Alert,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { useQueue } from '../../context/QueueContext';
-import { formatTime, statusColor, statusLabel, formatWait } from '../../utils/helpers';
+import { formatTime, statusColor, statusLabel, formatWait, buildCallSmsBody } from '../../utils/helpers';
+import * as SMS from 'expo-sms';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -63,13 +65,50 @@ export default function QueueListScreen({ route }) {
     );
   };
 
+  const callOnPhone = (customer) => {
+    const phone = customer.phone.replace(/\s/g, '');
+    Linking.openURL(`tel:${phone}`).catch(() =>
+      Alert.alert('Error', 'Unable to open the phone dialer.')
+    );
+  };
+
   const handleAction = (customer) => {
     const actions = [];
     if (customer.status === 'waiting') {
       actions.push({
         text: '📣 Call This Customer',
-        onPress: () => dispatch({ type: 'CALL_SPECIFIC', payload: { mode, id: customer.id } }),
+        onPress: async () => {
+          dispatch({ type: 'CALL_SPECIFIC', payload: { mode, id: customer.id } });
+          try {
+            const available = await SMS.isAvailableAsync();
+            if (available) {
+              const smsBody = buildCallSmsBody(customer, mode, state.settings[mode]);
+              await SMS.sendSMSAsync([customer.phone], smsBody);
+            }
+          } catch (_) {}
+        },
       });
+      if (waitingQueue.length > 1) {
+        const currentPos = getPosition(customer);
+        actions.push({
+          text: '↕️ Change Position',
+          onPress: () => {
+            const posOptions = [];
+            for (let i = 1; i <= waitingQueue.length; i++) {
+              if (i !== currentPos) {
+                posOptions.push({
+                  text: `Move to Position #${i}`,
+                  onPress: () => dispatch({ type: 'REORDER_QUEUE', payload: { mode, id: customer.id, newPosition: i } }),
+                });
+              }
+            }
+            posOptions.push({ text: 'Cancel', style: 'cancel' });
+            setTimeout(() => {
+              Alert.alert('Change Position', `${customer.name} is at Position #${currentPos}`, posOptions);
+            }, 500);
+          },
+        });
+      }
     }
     if (customer.status === 'called') {
       actions.push({
@@ -77,6 +116,10 @@ export default function QueueListScreen({ route }) {
         onPress: () => dispatch({ type: 'MARK_SERVED', payload: { mode, id: customer.id } }),
       });
     }
+    actions.push({
+      text: '📞 Call on Phone',
+      onPress: () => callOnPhone(customer),
+    });
     actions.push({
       text: '🗑 Remove from Queue',
       style: 'destructive',
