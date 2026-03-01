@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "VisionSnap AI",
+    "slug": "visionsnap",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0D1A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "VisionSnap AI needs camera access to scan and analyze objects.",
+        "NSPhotoLibraryUsageDescription": "VisionSnap AI needs gallery access to analyze your photos."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0D0D1A"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VisionSnap AI needs access to your photos to analyze them.",
+          "cameraPermission": "VisionSnap AI needs camera access to scan objects."
+        }
+      ]
+    ]
+  }
+}
