@@ -10,6 +10,7 @@ import DashboardScreen from '../screens/receptionist/DashboardScreen';
 import AddToQueueScreen from '../screens/receptionist/AddToQueueScreen';
 import QueueListScreen from '../screens/receptionist/QueueListScreen';
 import SettingsScreen from '../screens/receptionist/SettingsScreen';
+import StatsScreen from '../screens/receptionist/StatsScreen';
 import TrackingScreen from '../screens/customer/TrackingScreen';
 
 const Stack = createNativeStackNavigator();
@@ -72,6 +73,15 @@ function ReceptionistTabs({ route, navigation }) {
         options={{
           tabBarLabel: 'Settings',
           tabBarIcon: ({ focused }) => <TabIcon emoji="⚙️" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Stats"
+        component={StatsScreen}
+        initialParams={{ mode }}
+        options={{
+          tabBarLabel: 'Stats',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="📊" focused={focused} />,
         }}
       />
     </Tab.Navigator>
