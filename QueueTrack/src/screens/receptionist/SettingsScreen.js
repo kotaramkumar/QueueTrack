@@ -67,11 +67,11 @@ export default function SettingsScreen({ route }) {
 
         {/* Section: Business Info */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Business Info</Text>
+          <Text style={styles.sectionTitle}>{isRestaurant ? 'Restaurant Info' : 'Hospital Info'}</Text>
         </View>
         <View style={styles.card}>
           <View style={styles.field}>
-            <Text style={styles.fieldLabel}>Business Name</Text>
+            <Text style={styles.fieldLabel}>{isRestaurant ? 'Restaurant Name' : 'Hospital Name'}</Text>
             <TextInput
               style={styles.input}
               value={businessName}

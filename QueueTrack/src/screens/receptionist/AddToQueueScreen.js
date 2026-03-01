@@ -171,7 +171,7 @@ export default function AddToQueueScreen({ route, navigation }) {
 
             <View style={styles.smsNote}>
               <Text style={styles.smsNoteText}>
-                📱 An SMS confirmation with queue details will be sent to the customer's phone.
+                📱 An SMS from <Text style={styles.smsNoteName}>{settings?.businessName || (isRestaurant ? 'Our Restaurant' : 'Our Hospital')}</Text> with queue details will be sent to the customer's phone.
               </Text>
             </View>
           </View>
@@ -242,4 +242,5 @@ const styles = StyleSheet.create({
   submitBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 16, letterSpacing: 0.3 },
   smsNote: { marginTop: 14, backgroundColor: '#F0F9FF', borderRadius: 10, padding: 12 },
   smsNoteText: { fontSize: 12, color: '#0369A1', lineHeight: 17, textAlign: 'center' },
+  smsNoteName: { fontWeight: '700' },
 });

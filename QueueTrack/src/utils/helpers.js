@@ -18,7 +18,7 @@ export function buildTrackingLink(mode, queueNumber) {
 
 export function buildSmsBody(customer, mode, position, estimatedWait, settings) {
   const prefix = mode === 'restaurant' ? '🍽' : '🏥';
-  const businessName = settings?.businessName || 'Queue Track';
+  const businessName = settings?.businessName || (mode === 'restaurant' ? 'Our Restaurant' : 'Our Hospital');
   const seatInfo =
     mode === 'restaurant'
       ? `\nAvailable Seats: ${settings?.availableSeats ?? 'N/A'}`
@@ -47,7 +47,7 @@ Thank you for your patience! 🙏`;
 
 export function buildCallSmsBody(customer, mode, settings) {
   const prefix = mode === 'restaurant' ? '🍽' : '🏥';
-  const businessName = settings?.businessName || 'Queue Smart';
+  const businessName = settings?.businessName || (mode === 'restaurant' ? 'Our Restaurant' : 'Our Hospital');
   const doctorInfo =
     mode === 'hospital' && customer.doctor
       ? `\nPlease proceed to ${customer.doctor}'s room.`
