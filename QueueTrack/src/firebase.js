@@ -2,13 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDx2IY-qP0TrRMyKpDo_Hkm714Xhi7xGEE",
-  authDomain: "queuetrack-36c42.firebaseapp.com",
-  databaseURL: "https://queuetrack-36c42-default-rtdb.firebaseio.com",
-  projectId: "queuetrack-36c42",
-  storageBucket: "queuetrack-36c42.firebasestorage.app",
-  messagingSenderId: "134903723433",
-  appId: "1:134903723433:web:617f97d3db539b5c9e00b8",
+  apiKey: "AIzaSyBk40AJ8M1SRIukvN8JPW_G_YfhZXC8T0k",
+  authDomain: "queuetrack-36c42-15050.firebaseapp.com",
+  databaseURL: "https://queuetrack-36c42-15050-default-rtdb.firebaseio.com",
+  projectId: "queuetrack-36c42-15050",
+  storageBucket: "queuetrack-36c42-15050.firebasestorage.app",
+  messagingSenderId: "712114617864",
+  appId: "1:712114617864:web:48bc0396220f45bda09bbd",
 };
 
 const app = initializeApp(firebaseConfig);
